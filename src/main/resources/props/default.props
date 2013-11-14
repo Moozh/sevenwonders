@@ -1,0 +1,4 @@
+db.class=com.mysql.jdbc.Driver
+db.url=jdbc:mysql://localhost/sevenwonders
+db.user=sevenwonders
+db.pass=7W0nd3r5!

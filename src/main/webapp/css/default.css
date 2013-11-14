@@ -1,0 +1,52 @@
+html, body {
+	height: 100%;
+	margin: 0px auto;
+	padding: 0px 0px 0px 0px;
+}
+
+.menu {
+	width: 960px;
+	height: 60px;
+	margin: 0px auto;
+}
+
+.menu ul {
+	margin: 0px;
+	padding: 12px 0px 0px 0px;
+	list-style: none;
+	text-align: center;
+}
+
+.menu li {
+	display: inline;
+	padding: 0px;
+	background: none;
+}
+
+.menu a {
+	padding: 0 18px 10px 34px;
+	background: none;
+}
+
+.menu .first a {
+	background: none;
+	padding-left: 16px;
+}
+
+.container {
+  width: 960px;
+  margin: 0px auto;
+  padding: 0px 0px 0px 0px;
+}
+
+.content {
+  width: 960px;
+  border: 1px solid blue;
+}
+
+.footer {
+  clear: both;
+  border: 1px solid black;
+  text-align: center;
+}
+

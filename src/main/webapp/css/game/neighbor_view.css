@@ -1,0 +1,21 @@
+.neighbor_view {
+  position: absolute;
+  display: block;
+  z-index: 10;
+  width: 120px;
+}
+
+#neighbor_view_left {
+  top:  2px;
+  left: 2px;
+}
+
+#neighbor_view_right {
+  top:   2px;
+  right: 2px;
+}
+
+#neighbor_view_right * .neighbor_item {
+  right: 0px;
+}
+

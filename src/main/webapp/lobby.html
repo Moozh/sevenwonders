@@ -1,0 +1,17 @@
+<lift:surround with="lobby_template" at="content">
+
+  <lift:comet type="LobbyUserListView">
+    <span>Players:</span>
+    <div id="lobby_users">
+      <ul id="user_list">
+        <li class="player_item">Player 1</li>
+      </ul>
+    </div>
+  </lift:comet>
+ 
+  <lift:StartGame.start>
+    <start:button type="button">Start!</start:button>
+  </lift:StartGame.start>  
+  <a href="index">Cancel</a>
+</lift:surround>
+

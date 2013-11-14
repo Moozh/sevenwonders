@@ -1,13 +1,47 @@
+# .gitignore
+#
+# Drew Levin
+# April 4, 2012
+
+# use glob syntax.
+syntax: glob
+*.ser
 *.class
 *.log
+*~
+*.bak
+*.off
+*.old
+.DS_Store
+.cache
 
-# sbt specific
-dist/*
-target/
+# build
+null
+tmp*
+dist
+
+# sbt
 lib_managed/
 src_managed/
 project/boot/
-project/plugins/project/
+project/plugins/project
+dist/*
+target/
+build
+null
+tmp*
+test-output
 
-# Scala-IDE specific
+# scala ide
 .scala_dependencies
+
+# media
+*.jpg
+*.jpeg
+*.png
+*.gif
+
+# other scm
+.svn
+.CVS
+.hg*

@@ -1,0 +1,56 @@
+/* Title */
+
+.title {
+	width: 960px;
+	height: 120px;
+	border: 1px solid red;
+}
+
+.title h1 {
+  text-align: center;
+}
+
+.title #ajax-loader {
+  display:none; 
+  margin-bottom: 0px; 
+  margin-left: 5px" 
+}
+
+/* Game List */
+
+.games {
+  width: 600px;
+  border: 1px solid black;
+  float: left;
+}
+
+.lobby_item {
+  cursor: pointer; 
+  cursor: hand;
+  border: 1px solid black;
+}
+
+lobby_item:hover {
+  background-color: #A0A0A0;
+}
+
+/* User List */
+
+.users {
+  width: 300px;
+  border: 1px solid black;
+  float: right;
+}
+
+#users #users_all {
+  border: 1px solid green;
+}
+
+#users #users_friends {
+  border: 1px solid yellow;
+}
+
+/* Footer */
+
+
+

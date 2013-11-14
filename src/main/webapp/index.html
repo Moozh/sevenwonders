@@ -1,0 +1,38 @@
+<lift:surround with="home_template" at="content">
+
+  <div class="games">
+    <lift:comet type="HomeLobbyListView">
+      <span id="game_stats">289 Users in 37 Games</span>
+      <ul id="game_list">
+        <li class="lobby_item" onclick="">Name</li>
+      </ul>
+    </lift:comet>
+  </div>
+  
+  <lift:test_cond:loggedin>
+    <lift:CreateGameForm.create form="POST">
+      <create:submit />
+    </lift:CreateGameForm.create>
+  </lift:test_cond:loggedin>
+
+  <div class="users">
+    <lift:comet type="HomeUserListView">
+      <h3 align="center">Users</h3>
+      <ul id="user_list">
+        <li class="user_item">Abagail</li>
+      </ul>
+      <div id="user_filter">
+        <span id="users_all">All</span>
+        <span id="users_friends">Friends</span>
+      </div>
+    </lift:comet>
+  </div>
+
+  <lift:test_cond:loggedout>
+  </lift:test_cond:loggedout>
+
+  <lift:test_cond.loggedin>
+  </lift:test_cond.loggedin>
+
+</lift:surround>
+

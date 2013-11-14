@@ -1,0 +1,184 @@
+#debug {
+  position: absolute;
+  bottom: 2px;
+  left: 260px;
+  width: 200px;
+  height: 40px;
+  border: 2px solid red;
+  z-index: 1;
+  background-color: white;
+}
+
+#board {
+  position: relative;
+  margin: 0px;
+  border: 0px;
+  padding: 0px;
+  height: 640px;
+  width: 960px;
+  overflow: hidden;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+#scroll_left {
+  position: absolute;
+  top:  300px;
+  left: 0px;
+  height: 80px;
+  width:  80px;
+  z-index: 4;
+}
+
+#scroll_right {
+  position: absolute;
+  top:  300px;
+  right: 0px;
+  height: 80px;
+  width:  80px;
+  z-index: 4;
+}
+
+#player_board_list {
+  position: absolute;
+  left: 0px;
+}
+
+.player_board {
+  position: relative;
+  width: 960px;
+  height: 640px;
+  display: none;
+  white-space: nowrap;
+  background-color: #DDDDDD;
+  background-image: url('/img/wood.jpg');
+  background-repeat: repeat;
+  z-index: -1;
+}
+
+.board_image {
+	position: absolute;
+	height: 165px;
+	width: 400px;
+	top: 250px;
+	left: 280px;
+  z-index: 20;
+}
+
+.player_board .card_image {
+  position: absolute;
+  height: 137px;
+  width: 90px;
+  z-index: 2;
+}
+
+#game_chat {
+	position: absolute;
+	margin: 0px;
+	border: 1px solid black;
+	padding: 0px;
+	width: 250px;
+	height: 200px;
+	left: 2px;
+	bottom: 2px;
+  background-color: white;
+}
+
+#game_chat form {
+	position: absolute;
+	bottom: 0px;
+}
+
+#player_hand {
+  position: absolute;
+  margin: 0px;
+  padding: 0px;
+  width: 300px;
+  height: 200px;
+  right: 2px;
+  bottom: -150px;
+  z-index: 7;
+}
+
+.hand_div {
+  position: absolute;
+  margin: 0px;
+  border: 1px solid green;
+  padding: 0px;
+  z-index: 8;
+}
+
+#player_name {
+  border: 1px solid yellow;
+  position: absolute;
+  width: 400px;
+  height: 40px;
+  left: 280px;
+  top: 2px;
+  white-space: nowrap;
+}
+
+#player_name_main {
+  border: 1px solid red;
+  position: absolute;
+  width: 240px;
+  height: 40px;
+  left: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  background-color: white;
+}
+
+#player_name_left,
+#player_name_right {
+  border: 1px solid green;
+  position: absolute;
+  width: 240px;
+  height: 24px;
+  top: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  background-color: white;
+}
+
+#player_name_left {
+  left: 0px;
+}
+
+#player_name_right {
+  left: 480px;
+}
+
+#player_name_main ul {
+  position: absolute;
+  left: 0px;
+}
+
+#player_name_main li {
+  width: 240px;
+  height: 40px;
+  line-height: 40px;
+  display: inline-block;
+  font-size: 200%; 
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+#player_name_left ul, 
+#player_name_right ul {
+  position: absolute;
+  left: 0px;
+}
+
+#player_name_left li,
+#player_name_right li {
+  border: 1px solid black;
+  width: 80px;
+  height: 24px;
+  line-height: 24px;
+  display: inline-block;
+  font-size: 100%;
+  text-align: center;
+  vertical-align: middle;
+}

@@ -1,0 +1,43 @@
+<lift:surround with="game_template" at="content">
+<lift:comet type="GameView">
+<head>
+  <lift:AjaxCalls />
+  <lift:CheckIn />
+</head>
+<div id="board">
+  <span id="debug"></span>
+  <img id="scroll_left" src="/img/left_arrow.png" />
+  <img id="scroll_right" src="/img/right_arrow.png" />
+  <div id="player_name">
+    <div id="player_name_left">
+      <ul>
+      </ul>
+    </div>
+    <div id="player_name_main">
+      <ul>
+      </ul>
+    </div>
+    <div id="player_name_right">
+      <ul>
+      </ul>
+    </div>
+  </div>
+  <div id="player_summary">
+  </div>
+  <div id="game_chat">
+		<ul>
+			<li>Hello</li>
+			<li>Hello to you too!</li>
+		</ul>
+		<form>
+			<input value="Submit" type="submit" />
+		</form>
+  </div>
+  <div id="player_hand">
+  </div>
+  <ul id="player_board_list">
+  </ul>
+</div>
+</lift:comet>
+</lift:surround>
+

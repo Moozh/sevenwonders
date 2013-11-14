@@ -1,0 +1,566 @@
+require(["Game", "jquery"], function(Game, $) {
+
+Number.prototype.mod = function(n) {
+  return ((this%n)+n)%n;
+}
+  
+var scroll_queue = $({});
+var scrolling = false;
+
+var card_left = [280, 383, 487, 590, 175, 700, 800];
+var card_top = [250, 250, 250, 250, 300, 300, 300];
+
+var gameObject = new GameObject();
+
+
+
+
+function GameObject()
+{
+  var num_players = 0;
+  var player_index = 0;  // zero-based
+  var board_index = 0;
+
+  var age = 0;
+  var turn = 0;
+  var names = [];
+  var tableaus = [];
+  var hand = [];
+
+  var cardSelector = null;
+
+  /* init(json)
+   *   init should only be called by the server which will supply the server-side
+   * information in a json object.  The object contains the number of players, the
+   * active players index, the names of all the players, and the active player's
+   * starting hand as follows:
+   * 
+   * json = { "num_players"   : # , 
+   *          "player_index"  : # ,
+   *          "player_names"  : ["A", "B", "C", ..., "Z"],
+   *          "player_boards" : [60, 40, 21, ..., 71], 
+   *          "player_hand"   : [1104, 1105, 1202, 1301, 1403, 1501, 1502]
+   *        }
+   */
+  this.init = function(json) 
+  {
+    age = 1;
+    turn = 1;
+    
+    num_players = json.num_players;
+    player_index = json.player_index;
+    board_index = player_index;
+
+    // Create empty tableau objects for each player
+    for (var i=0; i<num_players; i++) {
+      tableaus[i] = new Tableau(null);
+    }
+
+    // Set player boards
+    for (var i=0; i<num_players; i++) {
+      tableaus[i].board = json.player_boards[i];
+    }
+
+    // Populate names
+    for (var i=0; i<num_players; i++) {
+      names[i] = json.player_names[i];  
+    }
+
+    // Populate hand (7 cards to start)
+    for (var i=0; i<7; i++) {
+      hand[i] = new Card(json.player_hand[i]);      
+    }
+
+    // Add the card html elements
+/*    for (var i=0; i<7; i++) {
+      $('#player_hand').append(
+        $('<img />', {"class": "card_img",
+                      "id": "card_" + (7-i),
+                      "src": "img/cards/" + hand[i].id + ".jpg"})
+      );
+    } */
+    dealCards();    
+
+    // Add the board html elements
+    for (var i=0; i<num_players; i++) {
+      $('#player_board_list').append(
+        $('<li></li>', {"class": "player_board"}).append(
+          $('<img />', {"class": "board_image",
+                        "src"  : "img/boards/" + tableaus[i].board + ".jpg"})
+        )
+      );
+    }
+
+    // Align the board elements
+    for (i=0; i<player_index-1; i++) {
+      $("#player_board_list").append($("#player_board_list li:first"));
+    }
+    $("#player_board_list li:first").css("display", "inline-block");
+
+
+    // Add the player names to the top
+    // -- main name
+    $('#player_name_main ul').append(
+      $('<li>' +  names[player_index] + '</li>')
+    );
+    // -- right names
+    for(var i=0; i<Math.floor((num_players-1)/2); i++) {
+      $('#player_name_right ul').append(
+        $('<li>' + names[(player_index + i+1) % num_players] + '</li>')
+      );
+    }
+    // -- left names
+    for(var i=0; i<Math.ceil((num_players-1)/2); i++) {
+      $('#player_name_left ul').append(
+        $('<li>' + names[(player_index + Math.floor((num_players-1)/2) + i+1) % num_players] + '</li>')
+      );
+    }
+    
+    // Align names
+    $("#player_name").
+      css("left",  (360 - Math.floor(num_players/2)*80) + "px").
+      css("width", (240 + (num_players-1)*80) + "px");
+    $("#player_name_main").
+      css("left",  (Math.floor(num_players/2)*80) + "px");
+    $("#player_name_left").
+      css("width", (Math.floor(num_players/2)*80) + "px");
+    $("#player_name_right").
+      css("left",  (Math.floor(num_players/2)*80+240) + "px").
+      css("width", ((Math.ceil(num_players/2)-1)*80) + "px");
+
+    // Create the hidden fade overlay
+    $('<div></div>', {'id': 'overlay'}).css(
+                     {'background-color': 'black',
+                      'position': 'absolute',
+                      'left': '0px',
+                      'top': '0px',
+                      'width': '100%',
+                      'height': $(document).height(),
+                      'z-index': '5',
+                      'opacity': '0'}).appendTo($('#board')).hide();
+
+    // Attach on click functions
+    $("#debug").html(scroll_queue.queue("scroll").length);
+
+    $("#player_hand").hover(
+      function() {
+        $(this).stop().animate({bottom : '2px'}, 500);
+      },
+      function() {
+        $(this).stop().animate({bottom : '-150px'}, 500);
+        for (var i=0; i<hand.length; i++) {
+          hand[i].jq_element.stop().animate({"bottom": "0px", "right": (30*i)+"px"}, 500);
+        }
+      });
+
+    // Attach scrolling functions
+    $("#scroll_left").click(scrollLeftGenerator(500, "swing"));
+    $("#scroll_right").click(scrollRightGenerator(500, "swing"));
+  }
+
+  /* scrollLeft
+   *   Adds all the logic to scroll the boards to the left to a queue and
+   * then begins the process of executing said queue.
+   */
+  function scrollLeftGenerator(dur, ease)
+  {
+    return function() {
+      scroll_queue.queue("scroll", function() {
+        board_index = (board_index - 1).mod(num_players);
+        $("#player_name_right").find("ul").prepend($("#player_name_main").find("li").clone());
+        $("#player_name_right").find("ul").css("left", "-80px");
+
+        $("#player_name_main").find("ul").prepend($("#player_name_left").find("li").clone().get(-1));
+        $("#player_name_main").find("ul").css("left", "-240px");
+
+        $("#player_name_left").find("ul").prepend($("#player_name_right").find("li").clone().get(-1));
+        $("#player_name_left").find("ul").css("left", "-80px");
+
+        $("#player_board_list").prepend($("#player_board_list li:last"));
+        $("#player_board_list").css("left", "-960px");
+        $("#player_board_list li:first").css("display", "inline-block"); 
+
+        $("#player_board_list").animate({left : "0px"},
+          { duration: dur,
+            easing: ease,
+            complete: function() { $("player_board_list li").eq(1).css("display", "none"); }
+          });
+
+        $("#player_name_main ul").animate({left : "0px"}, 
+          { duration: dur, 
+            easing: ease,
+            complete: function() { $("#player_name_main li:last").remove(); }
+          });
+
+        $("#player_name_left ul").animate({left : "0px"}, 
+          { duration: dur, 
+            easing: ease,
+            complete: function() { $("#player_name_left li:last").remove(); }
+          });
+
+        $("#player_name_right ul").animate({left : "0px"}, 
+          { duration: dur, 
+            easing: ease,
+            complete: function() { $("#player_name_right li:last").remove(); 
+                                   if (scrolling && scroll_queue.queue("scroll").length > 0) {
+                                     scroll_queue.dequeue("scroll");
+                                   } else {
+                                     scrolling = false;
+                                   }
+                                 }
+          });
+        $("#debug").html(scroll_queue.queue("scroll").length);
+      });
+      $("#debug").html(scroll_queue.queue("scroll").length);
+      if (!scrolling && scroll_queue.queue("scroll").length > 0) {
+        scroll_queue.dequeue("scroll");
+        scrolling = true;
+      }
+    };
+  }
+
+  /* scrollRight
+   *   Adds all the logic to scroll the boards to the right to a queue and
+   * then begins the process of executing said queue.
+   */
+  function scrollRightGenerator(dur, ease)
+  {
+    return function() {
+      scroll_queue.queue("scroll", function() {
+        board_index = (board_index + 1).mod(num_players);
+        $("#player_name_right").find("ul").append($("#player_name_left li:first").clone());
+
+        $("#player_name_main").find("ul").append($("#player_name_right li:first").clone());
+
+        $("#player_name_left").find("ul").append($("#player_name_main li:first").clone());
+
+        $("#player_board_list li").eq(1).css("display", "inline-block"); 
+
+        $("#player_board_list").animate({left : "-960px"},
+          { duration: dur,
+            easing: ease,
+            complete: function() { $("#player_board_list").append($("#player_board_list li:first"));
+                                   $("#player_board_list").css("left", "0px");
+                                   $("#player_board_list li:last").css("display", "none"); }
+          });
+
+        $("#player_name_main ul").animate({left : "-240px"}, 
+          { duration: dur, 
+            easing: ease,
+            complete: function() { $("#player_name_main li:first").remove();
+                                   $("#player_name_main ul").css("left", "0px"); }
+          });
+        $("#player_name_left ul").animate({left : "-80px"}, 
+          { duration: dur, 
+            easing: ease,
+            complete: function() { $("#player_name_left li:first").remove();
+                                   $("#player_name_left ul").css("left", "0px"); }
+          }); 
+        $("#player_name_right ul").animate({left : "-80px"}, 
+          { duration: dur, 
+            easing: ease,
+            complete: function() { $("#player_name_right li:first").remove(); 
+                                   $("#player_name_right ul").css("left", "0px"); 
+                                   if (scrolling && scroll_queue.queue("scroll").length > 0) {
+                                     scroll_queue.dequeue("scroll");
+                                   } else {
+                                     scrolling = false;
+                                   }
+                                 }
+          }); 
+          $("#debug").html(scroll_queue.queue("scroll").length);
+      });
+      $("#debug").html(scroll_queue.queue("scroll").length);
+      if (!scrolling && scroll_queue.queue("scroll").length > 0) {
+        scroll_queue.dequeue("scroll");
+        scrolling = true;
+      }
+    };
+  }
+
+  /* dealCards
+   *   Animate cards into the player's hand, then attach mouseover and click handlers to each.
+   * Uses a closure because the cards wait for the callback to attach the handlers and thus the
+   * handler generators are not executed immediately inside the for loop.
+   */
+  function dealCards()
+  {
+    for (var j=0; j<hand.length; j++) {
+      (function(i) {      
+        $('#player_hand').prepend(hand[i].jq_element);
+        hand[i].jq_element.delay(150*i).animate({"right": (30*i) + "px", "bottom": "0px"}, 
+          {   
+            duration: 800,
+            complete: function() { 
+              $(this).mouseover(fanCardsGenerator(i));
+              $(this).click(selectCardGenerator(i, function() {}));
+            }
+          }
+        );
+      })(j);
+    }
+  }
+
+  /* fanCardsGenerator
+   *   Creates a mouseover function for each individual card based on the card's index.  Each card's
+   * mouseover function must also animate the other cards in the player's hands.  There is a unique
+   * function for the first card because it does not need to move to the left as it is selected.
+   * Uses a closure because the mouseover function is called from outside the for loop.
+   */
+  function fanCardsGenerator(index)
+  {
+    if (index == 0) {
+      return function() {
+        for (var i=0; i<hand.length; i++) {
+          if (i == index) {
+            hand[i].jq_element.stop().animate({"right": (30*i) + "px", "bottom": "30px"}, 200);
+          } else if (i == index+1) {
+            hand[i].jq_element.stop().animate({"right": (30*(i+2)) + "px", "bottom": "5px"}, 200);
+          } else {
+            hand[i].jq_element.stop().animate({"right": (30*(i+2)) + "px", "bottom": "0px"}, 200);
+          }
+        } 
+      };
+    }
+    else {
+      return function() {
+        for (var i=0; i<hand.length; i++) {
+          if (i < index-1) {
+            hand[i].jq_element.stop().animate({"right": (30*i) + "px", "bottom": "0px"}, 200);
+          } else if (i == index-1) {
+            hand[i].jq_element.stop().animate({"right": (30*i) + "px", "bottom": "5px"}, 200);
+          } else if (i == index) {
+            hand[i].jq_element.stop().animate({"right": (30*(i+2)) + "px", "bottom": "30px"}, 200);
+          } else if (i == index+1) {
+            hand[i].jq_element.stop().animate({"right": (30*(i+4)) + "px", "bottom": "5px"}, 200);
+          } else {
+            hand[i].jq_element.stop().animate({"right": (30*(i+4)) + "px", "bottom": "0px"}, 200);
+          }
+        } 
+      };
+    }
+  }
+
+  function selectCardGenerator(index, callback)
+  {
+    return function() {
+      var button_cancel = $('<img />', {"id": "button_cancel",
+                              "src": "/img/cancel_up.png"}).css({
+                              "position": "absolute",      
+                              "height": "40px",
+                              "width": "120px",
+                              "left": "360px",
+                              "bottom": "165px",
+                              "z-index": "6",
+                              "opacity": 0}
+                            ).hover(
+                                function() { $(this).attr("src", "/img/cancel_over.png"); },
+                                function() { $(this).attr("src", "/img/cancel_up.png"); }
+                            ).click(selectCardCancel);
+
+      var button_confirm = $('<div></div>', {"id": "button_confirm"}).css({      
+                             "position": "absolute",      
+                             "height": "40px",
+                             "width": "120px",
+                             "right": "360px",
+                             "bottom": "165px",
+                             "background-image": "url('/img/confirm_up.png')",
+                             "z-index": "6",
+                             "opacity": 0}
+                           ).hover(
+                             function() { $(this).css("background-image", "url('/img/confirm_over.png')"); },
+                             function() { $(this).css("background-image", "url('/img/confirm_up.png')"); }
+                           );
+
+      var wonder_image = $('<img />', {"id": "wonder",
+                           "src": "img/wonders/100.png"}).css({ 
+                           "position": "absolute",
+                           "width": "240px",
+                           "right": "960px",
+                           "bottom": "360px",
+                           "z-index": "6",
+                           "opacity": 0.0}
+                         );
+
+      var sell_image = $('<img />', {"id": "sell",
+                         "src": "/img/tokens/coin_3.png"}).css({
+                         "position": "absolute",
+                         "width": "120px",
+                         "right": "-240px",
+                         "bottom": "360px",
+                         "z-index": "6",
+                         "opacity": 0.0}
+                       );
+
+      var choices = [wonder_image, hand[index].jq_element, sell_image];
+  
+      selectCardInit();
+
+      /* selectCardInit
+       *   Creates a function to be called when a card is selected from a player's hand.  Several things
+       * happen at this point.
+       * 1) The overlay is added and faded in to bring attention to the selected card.
+       * 2) The selected card is enlarged and moved to the middle of the screen, z-index increased.
+       * 3) The other cards are returned to their tucked position and the hand element is lowered
+       * 4) The board_list is returned to the player's board (and neighbor good tables).
+       * 5) The neighbor trade good tables are brought forward (and colored?)
+       * 6) Accept, Cancel, Sell, and Wonder buttons are added. (and accept is color coded?)
+       */
+      function selectCardInit()
+      {
+        // Lift the selected card above the overlay
+        hand[index].jq_element.css('z-index', 10);
+
+        // 4) Add the overlay
+        $('#overlay').toggle().fadeTo(500, 0.6);
+
+        // 3) Move the selected card to the middle (+250px extra from bottom)
+        hand[index].jq_element.stop().animate({"right":  "358px", 
+                                               "bottom": "410px", 
+                                               "height": "400px", 
+                                               "width":  "240px"}, 500);
+        // 1) Return cards      
+        //   Remove the hover function from player_hand
+        $("#player_hand").unbind('mouseenter mouseleave');
+        for (var i=0; i<hand.length; i++) {
+          hand[i].jq_element.unbind('mouseenter').unbind('mouseover').unbind('click');
+          if (i != index) {
+            hand[i].jq_element.stop().animate({"right": (30*i) + "px", "bottom": "0px"}, 200);
+          }
+        }
+        $("#player_hand").stop().animate({"bottom": "-250px"}, 500);
+
+        // Return to the player's board
+        var dest = player_index - board_index;
+        if ((0 < dest && dest <= num_players/2) || (dest + num_players <= num_players/2)) {
+          if (dest < 0) { dest += num_players; }
+          for (var i=0; i<dest; i++) {
+            (scrollRightGenerator(500/dest))();
+          }
+        }
+        else if (player_index != board_index) {
+         dest = -dest;
+         if (dest < 0) { dest += num_players; }
+         for (var i=0; i<dest; i++) {
+            (scrollLeftGenerator(500/dest))();
+          }
+        }
+
+        // Bring the neighbor summaries forward
+        $('#left_player_summary').stop().animate({'left': '100px',
+                                                  'top': '50px'}, 500);
+        $('#right_player_summary').stop().animate({'right': '100px',
+                                                   'top': '50px'}, 500);
+
+        button_cancel.delay(500).appendTo('#board').animate({"bottom": "115px",
+                                                             "opacity": 1}, 500);
+        button_confirm.delay(500).appendTo('#board').animate({"bottom": "115px",
+                                                              "opacity": 1}, 500);
+        wonder_image.delay(500).appendTo('#board').animate({"right": "650px",
+                                                            "opacity": 0.5}, 500);
+        sell_image.delay(500).appendTo('#board').animate({"right": "70px",
+                                                          "opacity": 0.5}, 500);      
+      
+      }
+
+      /* selectCardCancel
+       *   Undo the changes of selectCardInit
+       * 1) The overlay is faded out and removed.
+       * 2) The selected card returned to the deck, z-index decreased.
+       * 3) The cards click and mouseover functions are restored
+       * 4) The hand element hover function is restored
+       * 5) The neighbor trade good tables are returned
+       * 6) Accept, Cancel, Sell, and Wonder buttons are removed.
+       */
+      function selectCardCancel()
+      {
+        // 1) The overlay is faded out and removed.
+        $('#overlay').fadeTo(500, 0.0).delay(501).toggle();
+
+        // 2) The selected card returned to the deck, z-index decreased.
+        hand[index].jq_element.css("z-index", 8);
+        hand[index].jq_element.stop().animate({"right": (30*index) + "px", 
+                                               "bottom": "0px",
+                                               "height": "200px",
+                                               "width": "120px"},
+                                              { duration: 500,
+                                                complete: function () 
+                                                {
+                                                  $(this).mouseover(fanCardsGenerator(index));
+                                                  $(this).click(selectCardGenerator(index, function() {}));
+
+
+        // 3) The cards click and mouseover functions are restored
+        for (var i=0; i<hand.length; i++) {
+          if (i != index) {
+            hand[i].jq_element.mouseover(fanCardsGenerator(i));
+            hand[i].jq_element.click(selectCardGenerator(i, function() {}));
+          }
+        }
+
+        // 4) The hand element hover function is restored
+        $("#player_hand").hover(
+          function() {
+            $(this).stop().animate({bottom : '2px'}, 500);
+          },
+          function() {
+            $(this).stop().animate({bottom : '-150px'}, 500);
+            for (var i=0; i<hand.length; i++) {
+              hand[i].jq_element.stop().animate({"bottom": "0px", "right": (30*i)+"px"}, 500);
+            }
+          }
+        );
+                                                
+
+                                                }
+                                              });
+        $("#player_hand").stop().animate({"bottom": "-150px"}, 500);
+
+
+        // 5) The neighbor trade good tables are returned
+        $('#left_player_summary').stop().animate({'left': '2px',
+                                                  'top': '2px'}, 500);
+        $('#right_player_summary').stop().animate({'right': '2px',
+                                                   'top': '2px'}, 500);
+
+        // 6) Accept, Cancel, Sell, and Wonder buttons are removed.
+        button_cancel.animate({"bottom": "165px",
+                               "opacity": 0 }, 
+                              { duration: 500,
+                                complete: function() { $(this).remove(); }
+                              });
+        button_confirm.animate({"bottom": "165px",
+                                "opacity": 0 },
+                               { duration: 500,
+                                 complete: function() { $(this).remove(); }
+                               });
+        wonder_image.animate({"opacity": 0},
+                             { duration: 500,
+                               complete: function() { $(this).remove(); }
+                             });
+        sell_image.animate({"opacity": 0},
+                           { duration: 500,
+                             complete: function() { $(this).remove(); }
+                           });            
+      }
+    };      
+  }
+}
+
+/*
+PlayerBoard.prototype.playCard = function(id)
+{
+  var color_index = Math.floor((id % 100) / 10) - 1;
+  var temp_card = 
+        $('<img />',
+            { "src": "img/" + id + ".jpg",
+              "class": "card_image"
+            });
+  temp_card.css({"top": card_top[color_index] - (32 * (this.cards[color_index].length+1)) + "px", 
+                 "left": card_left[color_index] + "px",
+                 "z-index": 100 - this.cards[color_index].length - 1});      
+  this.cards[color_index].push(temp_card);
+  temp_card.appendTo(this.jq_element);
+}
+*/
+});
